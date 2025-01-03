@@ -57,7 +57,24 @@ struct Day15: AdventDay {
     }
 
     init(data: String) {
-        self.data = data
+        // self.data = data
+        self.data = self.bigExample
+    }
+
+    private func transform(_ grid: [[Character]]) -> [[Character]] {
+        grid
+            .map { row in
+                row.flatMap { char in
+                    switch char {
+                    case "#": ["#", "#"]
+                    case ".": [".", "."]
+                    case "O": ["[", "]"]
+                    case "@": ["@", "."]
+                    default: fatalError("haha")
+                    }
+                }
+                .map { Character($0) }
+            }
     }
 
     private func parse(_ data: String) -> (grid: [[Character]], ds: [Direction]) {
@@ -90,11 +107,19 @@ struct Day15: AdventDay {
 
         guard 0 <= I, I < W, 0 <= J, J < H else { return false }
 
-        if grid[J][I] == "#" { return false }
-        if grid[J][I] == "@" { return false }
-        if grid[J][I] == "." { return true }
+        switch grid[J][I] {
+        case "#": return false
+        case "@": return false
+        case ".": return true
+        case "O":
+            return self.canMove(i: I, j: J, dir: dir, grid: grid)
+        case "[":
+            return self.canMove(i: I, j: J, dir: dir, grid: grid)
+        case "]":
+            return self.canMove(i: I, j: J, dir: dir, grid: grid)
 
-        return self.canMove(i: I, j: J, dir: dir, grid: grid)
+        default: fatalError("unknown")
+        }
     }
 
     private func move(i: Int, j: Int, dir: Direction, grid: [[Character]]) -> [[Character]] {
@@ -109,21 +134,59 @@ struct Day15: AdventDay {
         let nbr = grid[J][I]
 
         switch curr {
-        case "O", "@":
+        case "@":
+            let m = { (g: inout [[Character]]) in
+                g[j][i] = "."
+                g[J][I] = curr
+            }
             switch nbr {
             case "#": break
-            case "O":
+            case "[", "]":
                 newGrid = self.move(i: I, j: J, dir: dir, grid: newGrid)
-                newGrid[J][I] = curr
-                newGrid[j][i] = "."
+                m(&newGrid)
             case ".":
-                newGrid[J][I] = curr
-                newGrid[j][i] = "."
-            default: fatalError("Unexpected nbr: \(nbr)")
+                m(&newGrid)
+            default:
+                fatalError("Unexpected nbr: \(nbr)")
+            }
+        case "[":
+            let m = { (g: inout [[Character]]) in
+                g[j][i] = "."
+                g[j][i + 1] = "."
+                g[J][I] = curr
+                g[J][I + 1] = "]"
+            }
+            switch nbr {
+            case "#": break
+            case "[", "]":
+                newGrid = self.move(i: I, j: J, dir: dir, grid: newGrid)
+                m(&newGrid)
+            case ".":
+                m(&newGrid)
+            default:
+                fatalError("Unexpected nbr: \(nbr)")
+            }
+        case "]":
+            let m = { (g: inout [[Character]]) in
+                g[j][i] = "."
+                g[j][i - 1] = "."
+                g[J][I] = curr
+                g[J][I - 1] = "["
+            }
+            switch nbr {
+            case "#": break
+            case "[", "]":
+                newGrid = self.move(i: I, j: J, dir: dir, grid: newGrid)
+                m(&newGrid)
+            case ".":
+                m(&newGrid)
+            default:
+                fatalError("Unexpected nbr: \(nbr)")
             }
         case "#": break
         case ".": break
-        default: fatalError("B")
+        default:
+            fatalError("B")
         }
         return newGrid
     }
@@ -145,8 +208,9 @@ struct Day15: AdventDay {
     }
 
     func part1() -> Int {
+        // return 0
         let (grid, directions) = self.parse(self.data)
-        var newGrid = grid
+        var newGrid = self.transform(grid)
         self.draw(newGrid)
         for dir in directions {
             print()
@@ -157,6 +221,7 @@ struct Day15: AdventDay {
             }
             self.draw(newGrid)
         }
+
         var score: Int = 0
         let (W, H) = (grid[0].count, grid.count)
         for j in 0..<H {
@@ -166,10 +231,23 @@ struct Day15: AdventDay {
                 }
             }
         }
+
         return score
     }
 
     func part2() -> Int {
-        0
+        return 0
+        let (grid, directions) = self.parse(self.data)
+        let thicc = self.transform(grid)
+
+        var newGrid = thicc
+        self.draw(newGrid)
+
+        let (i, j) = self.find(newGrid)
+        for d in [Direction.up, .right, .down, .left] {
+            print(d.rawValue, self.canMove(i: i, j: j, dir: d, grid: newGrid))
+        }
+
+        return 0
     }
 }
