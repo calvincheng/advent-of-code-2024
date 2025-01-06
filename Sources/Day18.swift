@@ -31,6 +31,10 @@ struct Day18: AdventDay {
         2,0
         """
 
+    init(data: String) {
+        self.data = data
+    }
+
     private func parse(_ data: String) -> [(x: Int, y: Int)] {
         data
             .components(separatedBy: .whitespacesAndNewlines)
@@ -44,7 +48,6 @@ struct Day18: AdventDay {
 
     private func memorySpace(locations: [(x: Int, y: Int)]) -> [[Character]] {
         let (W, H) = (71, 71)
-        // let (W, H) = (7, 7)
         var grid = Array(repeating: Array(repeating: Character("."), count: W), count: H)
         for (x, y) in locations {
             grid[y][x] = "#"
@@ -61,15 +64,10 @@ struct Day18: AdventDay {
         let (W, H) = (grid[0].count, grid.count)
 
         var costs: [[Int]: Int] = [[start.x, start.y]: 0]
-        var queue: [(Pose, [Pose], Int)] = [(start, [], 0)]
-        var pathsAndCosts: [(path: [Pose], cost: Int)] = []
+        var queue: [(Pose, [Pose])] = [(start, [])]
 
         while let poseAndPath = queue.popLast() {
-            let (pose, path, currCost) = poseAndPath
-
-            if pose.x == end.x, pose.y == end.y {
-                pathsAndCosts.append((path + [pose], currCost))
-            }
+            let (pose, path) = poseAndPath
 
             let nbrs: [(x: Int, y: Int)] = [(0, 1), (0, -1), (1, 0), (-1, 0)]
                 .map { (dx, dy) in (pose.x + dx, pose.y + dy) }
@@ -82,7 +80,7 @@ struct Day18: AdventDay {
 
                 if newCost < costs[[nbr.x, nbr.y], default: Int.max] {
                     costs[[nbr.x, nbr.y]] = newCost
-                    queue.insert((nbr, path + [pose], newCost), at: 0)
+                    queue.insert((nbr, path + [pose]), at: 0)
                 }
             }
         }
@@ -91,46 +89,18 @@ struct Day18: AdventDay {
             .filter { $0[0] == end.x && $0[1] == end.y }
             .min { costs[$0, default: Int.max] < costs[$1, default: Int.max] }
 
-        guard let best, let bestCost = costs[best] else { return nil }
-
-        let bestPaths =
-            pathsAndCosts
-            .filter { _, cost in cost == bestCost }
-            .map(\.path)
-
-        // Print the result
-        // for path in bestPaths {
-        //     var printGrid = grid
-        //     for pose in path {
-        //         printGrid[pose.y][pose.x] = "O"
-        //     }
-        //     for row in printGrid {
-        //         print(row.map { String($0) }.joined())
-        //     }
-        //     print()
-        // }
-
+        guard let best else { return nil }
         return costs[best]!
-    }
-    init(data: String) {
-        self.data = data
     }
 
     func part1() -> Int {
         let ls = self.parse(self.data)
         let ms = self.memorySpace(locations: Array(ls[0..<1024]))
-        for row in ms {
-            print(row.map { String($0) }.joined())
-        }
-        print()
-        guard let result = self.bfs(grid: ms, start: (0, 0), end: (6, 6)) else {
-            return -1
-        }
+        let result = self.bfs(grid: ms, start: (0, 0), end: (70, 70))
+        guard let result else { return -1 }
         return result
     }
 
-    // Can just check which bit falls on any of the valid paths or something
-    // like that but whatever
     func part2() -> Int {
         let ls = self.parse(self.data)
         for i in 0..<ls.count {
